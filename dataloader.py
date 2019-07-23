@@ -136,7 +136,7 @@ class ImageLoader:
             im = self.transform(im)
             while self.Q.full():
                 time.sleep(2)
-            self.Q.put((im, inp, im_name))
+            self.Q.put((im, inp, im_name))    
 
     def getitem_yolo(self):
         for i in range(self.num_batches):
@@ -147,7 +147,8 @@ class ImageLoader:
             for k in range(i*self.batchSize, min((i +  1)*self.batchSize, self.datalen)):
                 inp_dim = int(opt.inp_dim)
                 im_name_k = self.imglist[k].rstrip('\n').rstrip('\r')
-                im_name_k = os.path.join(self.img_dir, im_name_k)
+                if not os.path.isabs(im_name_k):
+                    im_name_k = os.path.join(self.img_dir, im_name_k)
                 img_k, orig_img_k, im_dim_list_k = prep_image(im_name_k, inp_dim)
             
                 img.append(img_k)
@@ -168,6 +169,9 @@ class ImageLoader:
             self.Q.put((img, orig_img, im_name, im_dim_list))
 
     def getitem(self):
+        return self.Q.get()
+
+    def read(self):
         return self.Q.get()
 
     def length(self):

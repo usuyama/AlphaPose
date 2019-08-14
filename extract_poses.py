@@ -61,6 +61,7 @@ pose_model.eval()
 
 print('done')
 
+# assume batch size 1 for now
 data_loader = ImageLoader(input_imgs, batchSize=1, format='yolo').start()
 
 data_len = data_loader.length()
@@ -73,11 +74,11 @@ for i in im_names_desc:
     with torch.no_grad():
         (img, orig_img, im_name, im_dim_list) = data_loader.read()
 
-        rel_img_path = os.path.relpath(im_name, args.inputpath)
+        rel_img_path = os.path.relpath(im_name[0], args.inputpath)
         out_img_path = os.path.join(args.outputpath, rel_img_path)
         out_img_folder = os.path.dirname(out_img_path)
         os.makedirs(out_img_folder, exist_ok=True)
-        
+
         # Human Detection
         img = Variable(img).cuda()
         im_dim_list = im_dim_list.cuda()
@@ -86,13 +87,13 @@ for i in im_names_desc:
 
         dets = dynamic_write_results(prediction, opt.confidence,
                      opt.num_classes, nms=True, nms_conf=opt.nms_thesh)
-        
+
         if isinstance(dets, int) or dets.shape[0] == 0:
             # no human
-            continue 
+            continue
 
         im_dim_list = torch.index_select(im_dim_list, 0, dets[:, 0].long())
-        scaling_factor = torch.min(det_inp_dim / im_dim_list, 1)[0].view(-1, 1)            
+        scaling_factor = torch.min(det_inp_dim / im_dim_list, 1)[0].view(-1, 1)
         # coordinate transfer
         dets[:, [1, 3]] -= (det_inp_dim - scaling_factor * im_dim_list[:, 0].view(-1, 1)) / 2
         dets[:, [2, 4]] -= (det_inp_dim - scaling_factor * im_dim_list[:, 1].view(-1, 1)) / 2
@@ -110,13 +111,13 @@ for i in im_names_desc:
         pt1 = torch.zeros(boxes.size(0), 2)
         pt2 = torch.zeros(boxes.size(0), 2)
         inps, pt1, pt2 = crop_from_dets(inp, boxes, inps, pt1, pt2)
-        
+
         #inps = Variable(inps.cuda())
         #hm = pose_model(inps)
 
         imgs = inps.cpu().numpy()
         for i in range(len(inps)):
-            img = imgs[0]
+            img = imgs[i]
             img[0] += 0.406
             img[1] += 0.457
             img[2] += 0.480

@@ -27,3 +27,4 @@ images
 *.weights
 
 coco-minival/
+outputs/
